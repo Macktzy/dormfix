@@ -1,0 +1,60 @@
+name: flutter_application_1
+description: "A new Flutter project."
+publish_to: 'none' # Prevent accidental publishing
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  intl: ^0.19.0
+
+  # Fonts
+  google_fonts: ^6.2.1
+
+  # UI
+  cupertino_icons: ^1.0.2
+
+  # Database & storage
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  shared_preferences: ^2.2.2
+
+  # Media
+  image_picker: ^1.0.4
+
+  # State management
+  provider: ^6.0.5
+
+  # Splash screen
+  flutter_native_splash: ^2.4.0
+
+  # Charts & Analytics
+  fl_chart: ^0.63.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/icon.png
+    - assets/splash.png
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon.png"
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/splash.png
+  android: true
+  ios: true
