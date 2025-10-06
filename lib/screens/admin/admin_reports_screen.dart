@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/supabase_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../services/database_service.dart';
 import '../../models/request.dart';
@@ -17,7 +18,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
   @override
   void initState() {
     super.initState();
-    _requestsFuture = DatabaseService.instance.getAllRequests();
+    _requestsFuture = SupabaseService().getAllRequests();
   }
 
   @override

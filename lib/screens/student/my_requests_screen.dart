@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/supabase_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/database_service.dart';
 import '../../models/request.dart';
@@ -17,14 +18,12 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
   @override
   void initState() {
     super.initState();
-    _future = DatabaseService.instance.getRequestsByStudentId(widget.studentId);
+    _future = SupabaseService().getRequestsByStudentId(widget.studentId);
   }
 
   Future<void> _refresh() async {
     setState(() {
-      _future = DatabaseService.instance.getRequestsByStudentId(
-        widget.studentId,
-      );
+      _future = SupabaseService().getRequestsByStudentId(widget.studentId);
     });
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/supabase_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/database_service.dart';
 import '../../models/request.dart';
@@ -26,7 +27,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   void _reload() {
     setState(() {
-      _allRequests = DatabaseService.instance.getAllRequests();
+      _allRequests = SupabaseService().getAllRequests();
     });
   }
 

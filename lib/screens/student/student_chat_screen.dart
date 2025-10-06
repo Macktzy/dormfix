@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/supabase_service.dart';
 import '../../models/message.dart';
 import '../../services/database_service.dart';
 
@@ -27,7 +28,7 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
   }
 
   Future<void> _loadMessages() async {
-    final messages = await DatabaseService.instance.getConversation(
+    final messages = await SupabaseService().getConversation(
       widget.studentId,
       widget.staffId,
     );
@@ -47,7 +48,7 @@ class _StudentChatScreenState extends State<StudentChatScreen> {
       timestamp: DateTime.now(),
     );
 
-    await DatabaseService.instance.sendMessage(message);
+    await SupabaseService().sendMessage(message);
     _messageController.clear();
     await _loadMessages();
   }

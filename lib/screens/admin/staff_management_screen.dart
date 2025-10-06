@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/database_service.dart';
-import '../../models/user.dart';
+import '../../services/supabase_service.dart';
+import '../../models/staff.dart'; // Changed from user.dart to staff.dart
 
 class StaffManagementScreen extends StatefulWidget {
   const StaffManagementScreen({super.key});
@@ -10,7 +10,7 @@ class StaffManagementScreen extends StatefulWidget {
 }
 
 class _StaffManagementScreenState extends State<StaffManagementScreen> {
-  late Future<List<User>> _staffList;
+  late Future<List<Staff>> _staffList; // Changed from List<User> to List<Staff>
 
   @override
   void initState() {
@@ -20,41 +20,41 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
 
   void _reload() {
     setState(() {
-      _staffList = DatabaseService.instance.getAllStaff();
+      _staffList = SupabaseService().getAllStaff();
     });
   }
 
   void _showAddStaffDialog() {
-    final _formKey = GlobalKey<FormState>();
-    final _fullNameController = TextEditingController();
-    final _staffIdController = TextEditingController();
-    final _passwordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final fullNameController = TextEditingController();
+    final usernameController = TextEditingController();
+    final passwordController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Add New Staff'),
         content: Form(
-          key: _formKey,
+          key: formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
-                controller: _fullNameController,
+                controller: fullNameController,
                 decoration: const InputDecoration(labelText: 'Full Name'),
                 validator: (value) => value == null || value.trim().isEmpty
                     ? 'Enter full name'
                     : null,
               ),
               TextFormField(
-                controller: _staffIdController,
-                decoration: const InputDecoration(labelText: 'Staff ID'),
+                controller: usernameController,
+                decoration: const InputDecoration(labelText: 'Username'),
                 validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Enter staff ID'
+                    ? 'Enter username'
                     : null,
               ),
               TextFormField(
-                controller: _passwordController,
+                controller: passwordController,
                 decoration: const InputDecoration(labelText: 'Password'),
                 obscureText: true,
                 validator: (value) => value == null || value.trim().isEmpty
@@ -71,19 +71,16 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              if (!_formKey.currentState!.validate()) return;
-
-              final staff = User(
-                username: _staffIdController.text.trim(),
-                password: _passwordController.text.trim(),
-                fullName: _fullNameController.text.trim(),
-                studentId: _staffIdController.text.trim(),
-                email: '${_staffIdController.text.trim()}@dormfix.com',
-                userType: UserType.staff,
-              );
+              if (!formKey.currentState!.validate()) return;
 
               try {
-                await DatabaseService.instance.addStaff(staff);
+                await SupabaseService().addStaff(
+                  username: usernameController.text.trim(),
+                  password: passwordController.text.trim(),
+                  fullName: fullNameController.text.trim(),
+                );
+
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 _reload();
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -93,6 +90,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                   ),
                 );
               } catch (e) {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Error adding staff: $e'),
@@ -120,20 +118,33 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton(
+            child: ElevatedButton.icon(
               onPressed: _showAddStaffDialog,
-              child: const Text('Add Staff'),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Staff'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[600],
+                foregroundColor: Colors.white,
+              ),
             ),
           ),
           Expanded(
-            child: FutureBuilder<List<User>>(
+            child: FutureBuilder<List<Staff>>(
               future: _staffList,
               builder: (context, snapshot) {
-                if (!snapshot.hasData)
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
-                final staffList = snapshot.data!;
-                if (staffList.isEmpty)
+                }
+
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return const Center(child: Text('No staff members found'));
+                }
+
+                final staffList = snapshot.data!;
                 return ListView.builder(
                   itemCount: staffList.length,
                   itemBuilder: (context, index) {
@@ -144,10 +155,18 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                         vertical: 6,
                       ),
                       child: ListTile(
-                        title: Text(staff.fullName),
-                        subtitle: Text(
-                          'Assigned Requests: ${staff.assignedRequestsCount}',
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.blue[600],
+                          child: Text(
+                            staff.name[0].toUpperCase(),
+                            style: const TextStyle(color: Colors.white),
+                          ),
                         ),
+                        title: Text(
+                          staff.name,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text('Username: ${staff.name}'),
                       ),
                     );
                   },

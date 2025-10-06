@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/supabase_service.dart';
 import '../../services/database_service.dart';
 import '../../models/student.dart';
 
@@ -15,6 +16,7 @@ class _StudentSignUpScreenState extends State<StudentSignUpScreen> {
   final _studentIdController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _roomNumberController = TextEditingController();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -29,7 +31,7 @@ class _StudentSignUpScreenState extends State<StudentSignUpScreen> {
 
     try {
       // Check if student ID already exists
-      final existingStudent = await DatabaseService.instance.getStudentById(
+      final existingStudent = await SupabaseService().getStudentById(
         _studentIdController.text.trim(),
       );
 
@@ -42,14 +44,16 @@ class _StudentSignUpScreenState extends State<StudentSignUpScreen> {
         return;
       }
 
-      // Create new student
-      final newStudent = Student(
-        id: _studentIdController.text.trim(),
-        name: _nameController.text.trim(),
+      // Create new student with named parameters
+      await SupabaseService().createStudent(
+        studentId: _studentIdController.text.trim(),
+        studentName: _nameController.text.trim(),
+        username: _studentIdController.text
+            .trim(), // Using student ID as username
         password: _passwordController.text,
+        roomNumber:
+            '', // You'll need to collect this from the form or set a default
       );
-
-      await DatabaseService.instance.createStudent(newStudent);
 
       if (!mounted) return;
 
@@ -173,6 +177,7 @@ class _StudentSignUpScreenState extends State<StudentSignUpScreen> {
     _studentIdController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _roomNumberController.dispose();
     super.dispose();
   }
 
@@ -264,6 +269,27 @@ class _StudentSignUpScreenState extends State<StudentSignUpScreen> {
                       ),
                       const SizedBox(height: 16),
 
+                      // Room Number field
+                      TextFormField(
+                        controller: _roomNumberController,
+                        decoration: InputDecoration(
+                          labelText: 'Room Number',
+                          hintText: 'Enter your room number',
+                          prefixIcon: const Icon(Icons.meeting_room),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your room number';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
                       // Password field
                       TextFormField(
                         controller: _passwordController,

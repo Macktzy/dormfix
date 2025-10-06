@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/supabase_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../constants/app_constants.dart';
@@ -131,7 +132,7 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
         completedAt: null, // Initialize new field
       );
 
-      await DatabaseService.instance.createRequest(req);
+      await SupabaseService().createRequest(req);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

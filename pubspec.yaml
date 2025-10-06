@@ -10,7 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  intl: ^0.19.0
+  intl: ^0.20.2
+  supabase_flutter: ^2.10.2
 
   # Fonts
   google_fonts: ^6.2.1
@@ -33,13 +34,13 @@ dependencies:
   flutter_native_splash: ^2.4.0
 
   # Charts & Analytics
-  fl_chart: ^0.63.0
+  fl_chart: ^1.1.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true

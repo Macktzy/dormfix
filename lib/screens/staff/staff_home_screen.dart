@@ -1,11 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import '../../services/database_service.dart';
-import '../../models/request.dart';
-
-import 'package:flutter/material.dart';
+import '../../services/supabase_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -32,12 +26,16 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _future = DatabaseService.instance.getRequestsAssignedTo(widget.staffId);
+    _future = SupabaseService().getRequestsAssignedTo(
+      widget.staffId.toString(),
+    );
   }
 
   Future<void> _refresh() async {
     setState(() {
-      _future = DatabaseService.instance.getRequestsAssignedTo(widget.staffId);
+      _future = SupabaseService().getRequestsAssignedTo(
+        widget.staffId.toString(),
+      );
     });
   }
 
@@ -177,10 +175,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         roomNumber: widget.request.roomNumber,
       );
 
-      // Update in database
-      await DatabaseService.instance.updateRequest(updatedRequest);
+      // Update in database - pass id and updated request map
+      await SupabaseService().updateRequest(
+        widget.request.id!, // Pass the ID as first argument (assert non-null)
+        updatedRequest.toMap(), // Convert to Map<String, dynamic>
+      );
 
-      // Notify admin of progress (you can implement this based on your notification system)
+      // Notify admin of progress
       await _notifyAdminOfProgress(updatedRequest);
 
       // Show success message

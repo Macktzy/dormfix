@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/supabase_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../constants/app_constants.dart';
 import '../admin/admin_home_screen.dart';
@@ -45,9 +46,9 @@ class _SplashScreenState extends State<SplashScreen> {
       );
     } else if (userType.contains('staff')) {
       // Fetch staff ID from database
-      final allStaff = await DatabaseService.instance.getAllStaff();
+      final allStaff = await SupabaseService().getAllStaff();
       final staff = allStaff.firstWhere(
-        (u) => u.username == username,
+        (u) => u.name == username,
         orElse: () => throw Exception('Staff user not found'),
       );
 
@@ -55,8 +56,8 @@ class _SplashScreenState extends State<SplashScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => StaffHomeScreen(
-            staffId: staff.id!, // pass int ID
-            staffUsername: staff.username, // for display in AppBar
+            staffId: int.parse(staff.id), // pass int ID
+            staffUsername: staff.name, // for display in AppBar
           ),
         ),
       );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/supabase_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../constants/app_constants.dart';
 import 'submit_request_screen.dart';
@@ -31,7 +32,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   }
 
   Future<void> _loadRequests() async {
-    final requests = await DatabaseService.instance.getRequestsByStudentId(
+    final requests = await SupabaseService().getRequestsByStudentId(
       widget.studentId,
     );
     setState(() {

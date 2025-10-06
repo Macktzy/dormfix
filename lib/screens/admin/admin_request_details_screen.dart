@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../services/supabase_service.dart';
 import 'package:intl/intl.dart';
 import '../../models/request.dart';
 import '../../models/student.dart';
-import '../../models/user.dart';
-import '../../services/database_service.dart';
+import '../../models/staff.dart';
 import 'admin_chat_screen.dart';
 
 class AdminRequestDetailsScreen extends StatefulWidget {
@@ -11,10 +11,10 @@ class AdminRequestDetailsScreen extends StatefulWidget {
   final VoidCallback onRequestUpdated;
 
   const AdminRequestDetailsScreen({
-    Key? key,
+    super.key,
     required this.request,
     required this.onRequestUpdated,
-  }) : super(key: key);
+  });
 
   @override
   State<AdminRequestDetailsScreen> createState() =>
@@ -22,28 +22,30 @@ class AdminRequestDetailsScreen extends StatefulWidget {
 }
 
 class _AdminRequestDetailsScreenState extends State<AdminRequestDetailsScreen> {
-  int? _selectedStaffId;
+  String? _selectedStaffId; // Changed from int? to String?
   Student? _reporter;
-  List<User> _allStaff = [];
+  List<Staff> _allStaff = [];
 
   @override
   void initState() {
     super.initState();
-    _selectedStaffId = widget.request.assignedStaff;
+    // Convert int to String if assignedStaff is not null
+    _selectedStaffId = widget.request.assignedStaff?.toString();
     _loadStudentInfo();
     _loadStaff();
   }
 
   Future<void> _loadStudentInfo() async {
-    final student = await DatabaseService.instance.getStudentById(
+    final studentMap = await SupabaseService().getStudentById(
       widget.request.studentId,
     );
-    if (!mounted) return;
-    setState(() => _reporter = student);
+    if (studentMap == null || !mounted) return;
+
+    setState(() => _reporter = Student.fromMap(studentMap));
   }
 
   Future<void> _loadStaff() async {
-    final staffList = await DatabaseService.instance.getAllStaff();
+    final staffList = await SupabaseService().getAllStaff();
     if (!mounted) return;
     setState(() => _allStaff = staffList);
   }
@@ -58,50 +60,50 @@ class _AdminRequestDetailsScreenState extends State<AdminRequestDetailsScreen> {
 
     final oldStaff = widget.request.assignedStaff;
 
+    // Convert String staff ID to int for the request
     final updatedRequest = widget.request.copyWith(
-      assignedStaff: _selectedStaffId,
+      assignedStaff: int.tryParse(_selectedStaffId!),
       status: "Assigned",
     );
 
-    await DatabaseService.instance.updateRequest(updatedRequest);
+    await SupabaseService().updateRequest(
+      widget.request.id!,
+      updatedRequest.toMap(),
+    );
 
     if (!mounted) return;
 
     // Safe helper for getting staff name
-    User getStaffById(int? id) {
+    Staff getStaffById(String? id) {
       if (id == null) {
-        return User(
-          id: 0,
-          fullName: "Unknown",
-          username: "",
-          email: "",
-          password: "",
-          userType: UserType.staff,
-          studentId: "",
+        return Staff(
+          id: '0',
+          name: "Unknown",
+          role: "Unassigned",
+          username: '',
+          password: '',
         );
       }
       return _allStaff.firstWhere(
-        (u) => u.id == id,
-        orElse: () => User(
-          id: 0,
-          fullName: "Unknown",
-          username: "",
-          email: "",
-          password: "",
-          userType: UserType.staff,
-          studentId: "",
+        (s) => s.id == id,
+        orElse: () => Staff(
+          id: '0',
+          name: "Unknown",
+          role: "Unassigned",
+          username: '',
+          password: '',
         ),
       );
     }
 
-    final newStaffName = getStaffById(_selectedStaffId).fullName;
-    final oldStaffName = getStaffById(oldStaff).fullName;
+    final newStaffName = getStaffById(_selectedStaffId).name;
+    final oldStaffName = getStaffById(oldStaff?.toString()).name;
 
     if (oldStaff == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Task assigned to $newStaffName")));
-    } else if (oldStaff != _selectedStaffId) {
+    } else if (oldStaff.toString() != _selectedStaffId) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Task reassigned from $oldStaffName to $newStaffName"),
@@ -200,17 +202,17 @@ class _AdminRequestDetailsScreenState extends State<AdminRequestDetailsScreen> {
             const SizedBox(height: 20),
 
             if (_allStaff.isNotEmpty)
-              DropdownButtonFormField<int>(
-                value:
+              DropdownButtonFormField<String>(
+                initialValue:
                     _selectedStaffId != null &&
                         _allStaff.any((staff) => staff.id == _selectedStaffId)
                     ? _selectedStaffId
                     : null,
                 items: _allStaff
                     .map(
-                      (staff) => DropdownMenuItem<int>(
+                      (staff) => DropdownMenuItem<String>(
                         value: staff.id,
-                        child: Text("${staff.fullName} (${staff.username})"),
+                        child: Text("${staff.name} (${staff.availability})"),
                       ),
                     )
                     .toList(),
