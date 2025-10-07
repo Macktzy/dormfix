@@ -1,10 +1,10 @@
 class Student {
-  final String id; // Maps to student_id in database
-  final String name; // Maps to student_name in database
-  final String username; // Maps to username in database
+  final String id; // student_id in database
+  final String name; // student_name in database
+  final String username;
   final String password;
-  final String roomNumber; // Maps to room_number in database
-  final DateTime? createdAt;
+  final String roomNumber; // room_number in database
+  final DateTime? createdAt; // created_at in database
 
   Student({
     required this.id,
@@ -15,44 +15,37 @@ class Student {
     this.createdAt,
   });
 
-  // Convert Student to Map for database storage
+  /// Convert Student to Map for database - Uses snake_case with underscores
   Map<String, dynamic> toMap() {
     return {
-      'student_id': id, // Database column name
-      'student_name': name, // Database column name
+      'student_id': id, // ✅ snake_case (from screenshot)
+      'student_name': name, // ✅ snake_case (from screenshot)
       'username': username,
       'password': password,
-      'room_number': roomNumber, // Database column name
-      'created_at': (createdAt ?? DateTime.now()).millisecondsSinceEpoch,
+      'room_number': roomNumber, // ✅ snake_case (from screenshot)
+      'created_at':
+          createdAt?.millisecondsSinceEpoch ??
+          DateTime.now().millisecondsSinceEpoch, // ✅ snake_case, bigint
     };
   }
 
-  // Create Student from Map (from database)
+  /// Create Student from database Map - Uses snake_case with underscores
   factory Student.fromMap(Map<String, dynamic> map) {
-    DateTime? parsedCreatedAt;
-    final createdValue = map['created_at'];
-
-    if (createdValue != null) {
-      if (createdValue is int) {
-        // Supabase bigint timestamp in milliseconds
-        parsedCreatedAt = DateTime.fromMillisecondsSinceEpoch(createdValue);
-      } else if (createdValue is String) {
-        // ISO8601 string timestamp
-        parsedCreatedAt = DateTime.tryParse(createdValue);
-      }
-    }
-
     return Student(
       id: map['student_id']?.toString() ?? '',
       name: map['student_name']?.toString() ?? '',
       username: map['username']?.toString() ?? '',
       password: map['password']?.toString() ?? '',
       roomNumber: map['room_number']?.toString() ?? '',
-      createdAt: parsedCreatedAt,
+      createdAt: map['created_at'] != null
+          ? (map['created_at'] is int
+                ? DateTime.fromMillisecondsSinceEpoch(map['created_at'])
+                : DateTime.tryParse(map['created_at']?.toString() ?? ''))
+          : null,
     );
   }
 
-  // Create a copy of Student with some values updated
+  /// Create a copy of Student with some values updated
   Student copyWith({
     String? id,
     String? name,
@@ -73,7 +66,7 @@ class Student {
 
   @override
   String toString() {
-    return 'Student{id: $id, name: $name, username: $username, roomNumber: $roomNumber, createdAt: $createdAt}';
+    return 'Student{id: $id, name: $name, username: $username, roomNumber: $roomNumber}';
   }
 
   @override

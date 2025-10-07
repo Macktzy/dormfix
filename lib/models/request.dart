@@ -5,14 +5,14 @@ class MaintenanceRequest {
   final String title;
   final String problemCategory;
   final String description;
-  final String urgencyLevel; // keep consistent with DB
+  final String urgencyLevel;
   final String status;
   final String? photoPath;
-  final int? assignedStaff;
+  final int? assignedStaff; // int4 in your DB
   final String roomNumber;
   final DateTime createdAt;
   final String? progressNotes;
-  final DateTime? completedAt; // ✅ new field
+  final DateTime? completedAt;
 
   MaintenanceRequest({
     this.id,
@@ -28,52 +28,61 @@ class MaintenanceRequest {
     required this.roomNumber,
     required this.createdAt,
     this.progressNotes,
-    this.completedAt, // ✅ added
+    this.completedAt,
   });
 
+  /// Convert to database map - EXACT column names from YOUR screenshot
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'studentName': studentName,
-      'studentId': studentId,
+      'studentname': studentName, // ✅ All lowercase, no underscore
+      'studentid': studentId, // ✅ All lowercase, no underscore
       'title': title,
-      'problemCategory': problemCategory,
+      'problemcategory': problemCategory, // ✅ All lowercase, no underscore
       'description': description,
-      'urgencyLevel': urgencyLevel,
+      'urgencylevel': urgencyLevel, // ✅ All lowercase, no underscore
       'status': status,
-      'photoPath': photoPath,
-      'assignedStaff': assignedStaff,
-      'roomNumber': roomNumber,
-      'createdAt': createdAt.millisecondsSinceEpoch,
-      'progressNotes': progressNotes,
-      'completedAt': completedAt?.millisecondsSinceEpoch, // ✅ store as int
+      'photopath': photoPath, // ✅ All lowercase, no underscore
+      'assignedstaff': assignedStaff, // ✅ All lowercase, no underscore (int4)
+      'roomnumber': roomNumber, // ✅ All lowercase, no underscore
+      'createdat': createdAt
+          .millisecondsSinceEpoch, // ✅ All lowercase, no underscore (int8/bigint)
+      'progressnotes': progressNotes, // ✅ All lowercase, no underscore
+      'completedat': completedAt
+          ?.millisecondsSinceEpoch, // ✅ All lowercase, no underscore (int8)
     };
   }
 
+  /// Create from database map - EXACT column names from YOUR screenshot
   static MaintenanceRequest fromMap(Map<String, dynamic> map) {
     return MaintenanceRequest(
-      id: map['id'],
-      studentName: map['studentName'],
-      studentId: map['studentId'],
-      title: map['title'],
-      problemCategory: map['problemCategory'],
-      description: map['description'],
-      urgencyLevel: map['urgencyLevel'],
-      status: map['status'],
-      photoPath: map['photoPath'],
-      assignedStaff: map['assignedStaff'] != null
-          ? map['assignedStaff'] as int
+      id: map['id'] as int?,
+      studentName: map['studentname']?.toString() ?? '',
+      studentId: map['studentid']?.toString() ?? '',
+      title: map['title']?.toString() ?? '',
+      problemCategory: map['problemcategory']?.toString() ?? '',
+      description: map['description']?.toString() ?? '',
+      urgencyLevel: map['urgencylevel']?.toString() ?? 'Low',
+      status: map['status']?.toString() ?? 'Submitted',
+      photoPath: map['photopath']?.toString(),
+      assignedStaff: map['assignedstaff'] as int?,
+      roomNumber: map['roomnumber']?.toString() ?? '',
+      createdAt: map['createdat'] != null
+          ? (map['createdat'] is int
+                ? DateTime.fromMillisecondsSinceEpoch(map['createdat'])
+                : DateTime.tryParse(map['createdat']?.toString() ?? '') ??
+                      DateTime.now())
+          : DateTime.now(),
+      progressNotes: map['progressnotes']?.toString(),
+      completedAt: map['completedat'] != null
+          ? (map['completedat'] is int
+                ? DateTime.fromMillisecondsSinceEpoch(map['completedat'])
+                : DateTime.tryParse(map['completedat']?.toString() ?? ''))
           : null,
-      roomNumber: map['roomNumber'] ?? '',
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt']),
-      progressNotes: map['progressNotes'],
-      completedAt: map['completedAt'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['completedAt'])
-          : null, // ✅ convert back
     );
   }
 
-  // ✅ Helper: copyWith to make updates easier
+  /// Create a copy with modified fields
   MaintenanceRequest copyWith({
     int? id,
     String? studentName,
@@ -107,4 +116,18 @@ class MaintenanceRequest {
       completedAt: completedAt ?? this.completedAt,
     );
   }
+
+  @override
+  String toString() {
+    return 'MaintenanceRequest{id: $id, title: $title, status: $status}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is MaintenanceRequest && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

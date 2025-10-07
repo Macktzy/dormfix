@@ -1,7 +1,7 @@
 class Message {
   final int? id;
-  final String senderId; // staff/admin ID
-  final String receiverId; // student ID
+  final String senderId; // senderid (no underscore) in DB
+  final String receiverId; // receiverid (no underscore) in DB
   final String content;
   final DateTime timestamp;
 
@@ -13,25 +13,45 @@ class Message {
     required this.timestamp,
   });
 
-  // Convert a Message object into a Map for SQLite
+  /// Convert Message to Map for SQLite - ALL LOWERCASE, NO UNDERSCORES
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'senderId': senderId,
-      'receiverId': receiverId,
+      'senderid': senderId, // ✅ All lowercase, no underscore (from screenshot)
+      'receiverid':
+          receiverId, // ✅ All lowercase, no underscore (from screenshot)
       'content': content,
       'timestamp': timestamp.millisecondsSinceEpoch,
     };
   }
 
-  // Create a Message object from a Map (retrieved from SQLite)
+  /// Create Message from Map - ALL LOWERCASE, NO UNDERSCORES
   factory Message.fromMap(Map<String, dynamic> map) {
     return Message(
       id: map['id'] as int?,
-      senderId: map['senderId'] as String,
-      receiverId: map['receiverId'] as String,
-      content: map['content'] as String,
-      timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
+      senderId: map['senderid']?.toString() ?? '',
+      receiverId: map['receiverid']?.toString() ?? '',
+      content: map['content']?.toString() ?? '',
+      timestamp: map['timestamp'] != null
+          ? (map['timestamp'] is int
+                ? DateTime.fromMillisecondsSinceEpoch(map['timestamp'])
+                : DateTime.tryParse(map['timestamp']?.toString() ?? '') ??
+                      DateTime.now())
+          : DateTime.now(),
     );
   }
+
+  @override
+  String toString() {
+    return 'Message{id: $id, from: $senderId, to: $receiverId, at: $timestamp}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Message && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }
