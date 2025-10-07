@@ -2,17 +2,10 @@ import 'package:flutter/material.dart';
 import '../../services/supabase_service.dart';
 import '../../models/staff.dart';
 import '../../models/request.dart';
-import '../../screens/admin/admin_staff_chat_screen.dart';
+import 'admin_staff_chat_screen.dart';
 
 class EnhancedStaffManagementScreen extends StatefulWidget {
-  final String staffUsername;
-  final int staffId;
-
-  const EnhancedStaffManagementScreen({
-    super.key,
-    required this.staffUsername,
-    required this.staffId,
-  });
+  const EnhancedStaffManagementScreen({super.key});
 
   @override
   State<EnhancedStaffManagementScreen> createState() =>

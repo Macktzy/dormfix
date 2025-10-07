@@ -64,9 +64,9 @@ class _SplashScreenState extends State<SplashScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => StaffHomeScreen(
-              staffId: staffIdInt, // Use integer ID
+            builder: (_) => EnhancedStaffManagementScreen(
               staffUsername: username,
+              staffId: staffIdInt, // use the int value
             ),
           ),
         );
