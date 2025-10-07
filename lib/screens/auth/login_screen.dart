@@ -36,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text.trim();
 
     try {
-      // 1️⃣ Check if Admin (hardcoded)
+      // 1️⃣ Check if Admin (hardcoded for now - you should move to DB)
       if (username == 'admin' && password == 'admin123') {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_type', 'admin');
@@ -54,15 +54,17 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // 2️⃣ Try staff login (school ID or email)
+      // 2️⃣ Try staff login
       final staff = await _supabaseService.authenticateStaff(
         username,
         password,
       );
+
       if (staff != null) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('staff_id', staff.id);
-        await prefs.setString('username', staff.username ?? '');
+        await prefs.setString('user_type', 'staff');
+        await prefs.setInt('staff_id', staff.id!); // Save as int
+        await prefs.setString('username', staff.username);
         await prefs.setString('name', staff.name);
 
         if (!mounted) return;
@@ -77,19 +79,19 @@ class _LoginScreenState extends State<LoginScreen> {
           context,
           '/staff',
           arguments: {
-            'staffId': staff.id,
-            'staffUsername': staff.username ?? '',
+            'staffId': staff.id!, // Pass integer ID
+            'staffUsername': staff.username,
           },
         );
-
         return;
       }
 
-      // 3️⃣ Try student login (student ID or email)
+      // 3️⃣ Try student login
       final student = await _supabaseService.authenticateStudent(
         username,
         password,
       );
+
       if (student != null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_type', 'student');
@@ -113,16 +115,16 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // ❌ If neither admin, staff, nor student found
+      // ❌ If no match found
       _showErrorDialog(
-        'Invalid credentials',
-        'Please check your username/ID and password.',
+        'Invalid Credentials',
+        'The username/ID or password you entered is incorrect. Please try again.',
       );
     } catch (e) {
       print('Login error: $e');
       _showErrorDialog(
         'Login Failed',
-        'Something went wrong. Please try again.',
+        'An unexpected error occurred. Please try again later.',
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -137,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             const Icon(Icons.error, color: Colors.red),
             const SizedBox(width: 8),
-            Text(title),
+            Expanded(child: Text(title)),
           ],
         ),
         content: Text(message),
@@ -165,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 80),
 
-                // 🔧 App Logo
+                // App Logo
                 Container(
                   width: 120,
                   height: 120,
@@ -185,7 +187,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 30),
 
-                // Title
                 Text(
                   'DORM FIX',
                   style: TextStyle(
@@ -200,7 +201,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // Card
                 Card(
                   elevation: 10,
                   shape: RoundedRectangleBorder(
@@ -220,7 +220,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Username
                         TextFormField(
                           controller: _usernameController,
                           decoration: InputDecoration(
@@ -244,7 +243,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Password
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
@@ -283,7 +281,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 24),
 
-                        // Login button
                         SizedBox(
                           width: double.infinity,
                           height: 50,
@@ -313,7 +310,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 16),
 
-                        // Sign up
                         TextButton(
                           onPressed: () {
                             Navigator.push(

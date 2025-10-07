@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/supabase_service.dart';
-import '../../models/staff.dart'; // Changed from user.dart to staff.dart
+import '../../models/staff.dart';
 
 class StaffManagementScreen extends StatefulWidget {
   const StaffManagementScreen({super.key});
@@ -10,7 +10,7 @@ class StaffManagementScreen extends StatefulWidget {
 }
 
 class _StaffManagementScreenState extends State<StaffManagementScreen> {
-  late Future<List<Staff>> _staffList; // Changed from List<User> to List<Staff>
+  late Future<List<Staff>> _staffList;
 
   @override
   void initState() {
@@ -29,6 +29,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
     final fullNameController = TextEditingController();
     final usernameController = TextEditingController();
     final passwordController = TextEditingController();
+    final staffIdController = TextEditingController(); // ✅ Added staff_id field
 
     showDialog(
       context: context,
@@ -36,32 +37,47 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
         title: const Text('Add New Staff'),
         content: Form(
           key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: fullNameController,
-                decoration: const InputDecoration(labelText: 'Full Name'),
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Enter full name'
-                    : null,
-              ),
-              TextFormField(
-                controller: usernameController,
-                decoration: const InputDecoration(labelText: 'Username'),
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Enter username'
-                    : null,
-              ),
-              TextFormField(
-                controller: passwordController,
-                decoration: const InputDecoration(labelText: 'Password'),
-                obscureText: true,
-                validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Enter password'
-                    : null,
-              ),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: fullNameController,
+                  decoration: const InputDecoration(labelText: 'Full Name'),
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Enter full name'
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: staffIdController, // ✅ Staff ID field
+                  decoration: const InputDecoration(
+                    labelText: 'Staff ID',
+                    hintText: 'e.g., STAFF001',
+                  ),
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Enter staff ID'
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: usernameController,
+                  decoration: const InputDecoration(labelText: 'Username'),
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Enter username'
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: passwordController,
+                  decoration: const InputDecoration(labelText: 'Password'),
+                  obscureText: true,
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Enter password'
+                      : null,
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -78,6 +94,7 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                   username: usernameController.text.trim(),
                   password: passwordController.text.trim(),
                   fullName: fullNameController.text.trim(),
+                  staffId: staffIdController.text.trim(), // ✅ Pass staff_id
                 );
 
                 if (!context.mounted) return;
@@ -166,7 +183,38 @@ class _StaffManagementScreenState extends State<StaffManagementScreen> {
                           staff.name,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        subtitle: Text('Username: ${staff.name}'),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Staff ID: ${staff.staffId}'),
+                            Text('Username: ${staff.username}'),
+                            Text(
+                              'Assigned: ${staff.assignedRequestsCount} tasks',
+                            ),
+                          ],
+                        ),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: staff.availability == 'Available'
+                                ? Colors.green.withOpacity(0.2)
+                                : Colors.orange.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            staff.availability,
+                            style: TextStyle(
+                              color: staff.availability == 'Available'
+                                  ? Colors.green[700]
+                                  : Colors.orange[700],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
                       ),
                     );
                   },

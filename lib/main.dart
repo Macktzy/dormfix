@@ -76,21 +76,21 @@ class MyApp extends StatelessWidget {
       home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
       routes: {
-        '/login': (_) => LoginScreen(),
+        '/login': (_) => const LoginScreen(),
         '/admin': (_) => const AdminHomeScreen(),
 
-        // Staff route: expects a Map with 'username' and 'id'
+        // Staff route: expects a Map with 'staffId' (int) and 'staffUsername'
         '/staff': (context) {
           final args =
               ModalRoute.of(context)!.settings.arguments
                   as Map<String, dynamic>?;
 
-          final staffUsername = args?['username'] ?? '';
-          final staffId = args?['id'] ?? 0; // fallback to 0 if not provided
+          final staffUsername = args?['staffUsername'] ?? '';
+          final staffId = args?['staffId'] as int? ?? 0;
 
           return StaffHomeScreen(
             staffUsername: staffUsername,
-            staffId: staffId,
+            staffId: staffId, // INTEGER
           );
         },
 

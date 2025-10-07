@@ -6,7 +6,6 @@ import '../admin/admin_home_screen.dart';
 import '../staff/staff_home_screen.dart';
 import '../student/student_home_screen.dart';
 import 'login_screen.dart';
-import '../../services/database_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -23,61 +22,123 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _routeUser() async {
+    // Add small delay for splash effect
+    await Future.delayed(const Duration(seconds: 1));
+
     final prefs = await SharedPreferences.getInstance();
-    final userType = prefs.getString('user_type'); // e.g. "UserType.admin"
+    final userType = prefs.getString('user_type');
     final fullName = prefs.getString('full_name') ?? '';
     final studentId = prefs.getString('student_id') ?? '';
+    final staffIdInt = prefs.getInt('staff_id'); // Get as int
     final username = prefs.getString('username') ?? '';
 
     if (!mounted) return;
 
+    // No saved session, go to login
     if (userType == null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => LoginScreen()),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
       return;
     }
 
-    if (userType.contains('admin')) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
-      );
-    } else if (userType.contains('staff')) {
-      // Fetch staff ID from database
-      final allStaff = await SupabaseService().getAllStaff();
-      final staff = allStaff.firstWhere(
-        (u) => u.name == username,
-        orElse: () => throw Exception('Staff user not found'),
-      );
+    try {
+      // Route based on user type
+      if (userType == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
+        );
+      } else if (userType == 'staff') {
+        if (staffIdInt == null) {
+          // Session corrupted, go to login
+          await prefs.clear();
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+          );
+          return;
+        }
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => StaffHomeScreen(
-            staffId: int.parse(staff.id), // pass int ID
-            staffUsername: staff.name, // for display in AppBar
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => StaffHomeScreen(
+              staffId: staffIdInt, // Use integer ID
+              staffUsername: username,
+            ),
           ),
-        ),
-      );
-    } else {
-      // default to student
+        );
+      } else if (userType == 'student') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                StudentHomeScreen(studentId: studentId, fullName: fullName),
+          ),
+        );
+      } else {
+        // Unknown user type, go to login
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      }
+    } catch (e) {
+      print('Error routing user: $e');
+      // On error, go to login
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) =>
-              StudentHomeScreen(studentId: studentId, fullName: fullName),
-        ),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: AppConstants.backgroundColor,
-      body: Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      backgroundColor: AppConstants.primaryColor,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // App Logo
+            Container(
+              width: 120,
+              height: 120,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.build,
+                size: 60,
+                color: AppConstants.primaryColor,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'DORM FIX',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Maintenance Request System',
+              style: TextStyle(fontSize: 16, color: Colors.white70),
+            ),
+            const SizedBox(height: 40),
+            const CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 3,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

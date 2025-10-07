@@ -3,17 +3,16 @@ import '../../services/supabase_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../services/database_service.dart';
 import '../../models/request.dart';
 
 class StaffHomeScreen extends StatefulWidget {
-  final int staffId; // Changed from staffUsername to staffId
-  final String staffUsername; // Optional: keep for display
+  final int staffId; // Changed to int - uses staff.id (numeric)
+  final String staffUsername;
 
   const StaffHomeScreen({
     super.key,
     required this.staffId,
-    required this.staffUsername, // keep for AppBar display
+    required this.staffUsername,
   });
 
   @override
@@ -26,16 +25,12 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _future = SupabaseService().getRequestsAssignedTo(
-      widget.staffId.toString(),
-    );
+    _future = SupabaseService().getRequestsAssignedTo(widget.staffId);
   }
 
   Future<void> _refresh() async {
     setState(() {
-      _future = SupabaseService().getRequestsAssignedTo(
-        widget.staffId.toString(),
-      );
+      _future = SupabaseService().getRequestsAssignedTo(widget.staffId);
     });
   }
 
@@ -67,13 +62,45 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
       body: FutureBuilder<List<MaintenanceRequest>>(
         future: _future,
         builder: (_, snap) {
-          if (!snap.hasData) {
+          if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final items = snap.data!;
-          if (items.isEmpty) {
-            return const Center(child: Text('No tasks assigned.'));
+
+          if (snap.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
+                  Text('Error: ${snap.error}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _refresh,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
           }
+
+          final items = snap.data ?? [];
+          if (items.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.inbox, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No tasks assigned.',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ],
+              ),
+            );
+          }
+
           return RefreshIndicator(
             onRefresh: _refresh,
             child: ListView.builder(
@@ -83,10 +110,14 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                 return Card(
                   margin: const EdgeInsets.all(8.0),
                   child: ListTile(
-                    title: Text('${r.problemCategory} • ${r.status}'),
+                    title: Text(
+                      '${r.problemCategory} • ${r.status}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const SizedBox(height: 4),
                         Text('Room: ${r.roomNumber}'),
                         Text('Urgency: ${r.urgencyLevel}'),
                         Text(r.description),
@@ -105,10 +136,10 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   }
 
   Widget _buildStatusIndicator(String status) {
-    switch (status) {
-      case 'Completed':
+    switch (status.toLowerCase()) {
+      case 'completed':
         return const Icon(Icons.check_circle, color: Colors.green);
-      case 'In Progress':
+      case 'in progress':
         return const Icon(Icons.hourglass_empty, color: Colors.orange);
       default:
         return const Icon(Icons.pending, color: Colors.grey);
@@ -116,7 +147,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   }
 }
 
-// TaskDetailsScreen remains unchanged
+// ==================== TaskDetailsScreen ====================
 
 class TaskDetailsScreen extends StatefulWidget {
   final MaintenanceRequest request;
@@ -145,46 +176,62 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-    if (image != null) {
-      setState(() {
-        _completionPhoto = File(image.path);
-      });
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _completionPhoto = File(image.path);
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error picking image: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   Future<void> _updateTaskStatus(String newStatus) async {
-    setState(() {
-      _isUpdating = true;
-    });
+    setState(() => _isUpdating = true);
 
     try {
+      String? photoUrl;
+
+      // Upload photo if one was selected
+      if (_completionPhoto != null) {
+        final fileName =
+            'completion_${widget.request.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        photoUrl = await SupabaseService().uploadPhoto(
+          _completionPhoto!.path,
+          fileName,
+        );
+      }
+
       // Create updated request
-      final updatedRequest = MaintenanceRequest(
-        id: widget.request.id,
-        studentName: widget.request.studentName,
-        studentId: widget.request.studentId,
-        title: widget.request.title,
-        problemCategory: widget.request.problemCategory,
-        description: widget.request.description,
-        urgencyLevel: widget.request.urgencyLevel,
+      final updatedRequest = widget.request.copyWith(
         status: newStatus,
-        photoPath: _completionPhoto?.path ?? widget.request.photoPath,
-        assignedStaff: widget.request.assignedStaff,
-        createdAt: widget.request.createdAt,
-        roomNumber: widget.request.roomNumber,
+        photoPath: photoUrl ?? widget.request.photoPath,
+        progressNotes: _progressNoteController.text.trim().isNotEmpty
+            ? _progressNoteController.text.trim()
+            : widget.request.progressNotes,
+        completedAt: newStatus == 'Completed' ? DateTime.now() : null,
       );
 
-      // Update in database - pass id and updated request map
+      // Update in database
       await SupabaseService().updateRequest(
-        widget.request.id!, // Pass the ID as first argument (assert non-null)
-        updatedRequest.toMap(), // Convert to Map<String, dynamic>
+        widget.request.id!,
+        updatedRequest.toMap(),
       );
 
-      // Notify admin of progress
-      await _notifyAdminOfProgress(updatedRequest);
-
-      // Show success message
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -193,7 +240,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         ),
       );
 
-      // Refresh parent screen and go back
       widget.onTaskUpdated();
       Navigator.of(context).pop();
     } catch (e) {
@@ -205,16 +251,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         ),
       );
     } finally {
-      setState(() {
-        _isUpdating = false;
-      });
+      if (mounted) setState(() => _isUpdating = false);
     }
-  }
-
-  Future<void> _notifyAdminOfProgress(MaintenanceRequest request) async {
-    // Implement your admin notification logic here
-    // This could be a push notification, email, or database entry
-    print('Notifying admin of progress for task ${request.id}');
   }
 
   @override
@@ -249,24 +287,34 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                       widget.request.urgencyLevel,
                     ),
                     _buildInfoRow('Current Status:', widget.request.status),
+
                     if (widget.request.photoPath != null &&
-                        widget.request.photoPath!.isNotEmpty)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Issue Photo:',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          Image.file(
-                            File(widget.request.photoPath!),
-                            height: 200,
-                            fit: BoxFit.cover,
-                          ),
-                        ],
+                        widget.request.photoPath!.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Issue Photo:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          widget.request.photoPath!,
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 200,
+                              color: Colors.grey[300],
+                              child: const Center(
+                                child: Text('Image failed to load'),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -287,7 +335,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Progress Note (Optional)
+                      // Progress Note
                       TextField(
                         controller: _progressNoteController,
                         maxLines: 3,
@@ -299,7 +347,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Upload Completion Photo (Optional)
+                      // Upload Completion Photo
                       Row(
                         children: [
                           ElevatedButton.icon(
@@ -352,6 +400,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                         width: 16,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
+                                          color: Colors.white,
                                         ),
                                       )
                                     : const Text('Mark In Progress'),
@@ -374,6 +423,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                       width: 16,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
+                                        color: Colors.white,
                                       ),
                                     )
                                   : const Text('Mark Completed'),

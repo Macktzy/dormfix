@@ -32,25 +32,30 @@ class MaintenanceRequest {
   });
 
   /// Convert to database map - EXACT column names from YOUR screenshot
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'studentname': studentName, // ✅ All lowercase, no underscore
-      'studentid': studentId, // ✅ All lowercase, no underscore
+  /// Convert to database map
+  Map<String, dynamic> toMap({bool includeId = true}) {
+    final map = {
+      'studentname': studentName,
+      'studentid': studentId,
       'title': title,
-      'problemcategory': problemCategory, // ✅ All lowercase, no underscore
+      'problemcategory': problemCategory,
       'description': description,
-      'urgencylevel': urgencyLevel, // ✅ All lowercase, no underscore
+      'urgencylevel': urgencyLevel,
       'status': status,
-      'photopath': photoPath, // ✅ All lowercase, no underscore
-      'assignedstaff': assignedStaff, // ✅ All lowercase, no underscore (int4)
-      'roomnumber': roomNumber, // ✅ All lowercase, no underscore
-      'createdat': createdAt
-          .millisecondsSinceEpoch, // ✅ All lowercase, no underscore (int8/bigint)
-      'progressnotes': progressNotes, // ✅ All lowercase, no underscore
-      'completedat': completedAt
-          ?.millisecondsSinceEpoch, // ✅ All lowercase, no underscore (int8)
+      'photopath': photoPath,
+      'assignedstaff': assignedStaff,
+      'roomnumber': roomNumber,
+      'createdat': createdAt.millisecondsSinceEpoch,
+      'progressnotes': progressNotes,
+      'completedat': completedAt?.millisecondsSinceEpoch,
     };
+
+    // Only include id if it exists and includeId is true
+    if (includeId && id != null) {
+      map['id'] = id;
+    }
+
+    return map;
   }
 
   /// Create from database map - EXACT column names from YOUR screenshot
