@@ -88,7 +88,7 @@ class MyApp extends StatelessWidget {
           final staffUsername = args?['staffUsername'] ?? '';
           final staffId = args?['staffId'] as int? ?? 0;
 
-          return EnhancedStaffManagementScreen(
+          return StaffHomeScreen(
             staffUsername: staffUsername,
             staffId: staffId, // INTEGER
           );

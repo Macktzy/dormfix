@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../services/supabase_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../constants/app_constants.dart';
 import '../admin/admin_home_screen.dart';
-import '../staff/staff_home_screen.dart';
+import '../staff/staff_home_screen.dart'; // ✅ Import the correct StaffHomeScreen
 import '../student/student_home_screen.dart';
 import 'login_screen.dart';
 
@@ -61,10 +60,11 @@ class _SplashScreenState extends State<SplashScreen> {
           return;
         }
 
+        // ✅ Use StaffHomeScreen (for individual staff members)
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => EnhancedStaffManagementScreen(
+            builder: (_) => StaffHomeScreen(
               staffUsername: username,
               staffId: staffIdInt, // use the int value
             ),
